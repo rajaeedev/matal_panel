@@ -1,4 +1,3 @@
-```bash
 #!/bin/bash
 set -e
 
@@ -71,4 +70,3 @@ uv run python installer.py
 echo -e "${GREEN}OV-Panel installation completed.${NC}"
 echo -e "${GREEN}Open your panel at:${NC}"
 echo "http://YOUR_SERVER_IP:8443/metal/"
-```
