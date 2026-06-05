@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import date
-from typing import Optional
+from typing import Optional, Literal
 
 
 class CreateUser(BaseModel):
@@ -19,13 +19,13 @@ class UpdateUser(BaseModel):
 
 
 class NodeCreate(BaseModel):
-    name: str = Field(max_length=10)
+    name: str = Field(min_length=1, max_length=40)
     address: str
-    tunnel_address: str = Field(default=None)
-    protocol: str = Field(default="tcp")
+    tunnel_address: Optional[str] = Field(default=None)
+    protocol: Literal["tcp", "udp"] = Field(default="tcp")
     ovpn_port: int = Field(default=1194)
     port: int
-    key: str = Field(min_length=10, max_length=40)
+    key: str = Field(min_length=10, max_length=128)
     status: bool = Field(default=True)
     set_new_setting: bool = Field(default=False)
 

@@ -65,7 +65,17 @@ const SelectNodeForDownloadModal = ({ user, onClose }) => {
         onClose();
       }
     } catch (err) {
-      setError(err.message || `Failed to download config for user "${user.name}".`);
+      const data = err.response?.data;
+      let message = err.message || `Failed to download config for user "${user.name}".`;
+      if (data instanceof ArrayBuffer) {
+        try {
+          const parsed = JSON.parse(new TextDecoder('utf-8').decode(new Uint8Array(data)));
+          message = parsed.detail || parsed.msg || message;
+        } catch (e) { }
+      } else if (data?.detail || data?.msg) {
+        message = data.detail || data.msg;
+      }
+      setError(message);
     } finally {
       setIsDownloading(false);
     }

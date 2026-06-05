@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.auth.auth import get_current_user
@@ -26,10 +26,10 @@ async def add_node(
     if user["type"] != "main_admin":
         return ResponseModel(success=False, msg="Unauthorized access", data=None)
 
-    new_node = await add_node_handler(request, db)
+    new_node, message = await add_node_handler(request, db)
     return ResponseModel(
         success=new_node,
-        msg="Node added successfully" if new_node else "Failed to add node",
+        msg=message,
     )
 
 
@@ -93,8 +93,7 @@ async def download_ovpn_client(
     response = await download_ovpn_client_from_node(db=db, uuid=uuid, node_id=node_id)
     if response:
         return response
-    else:
-        return ResponseModel(success=False, msg="OVPN file not found", data=None)
+    raise HTTPException(status_code=404, detail="OVPN file not found")
 
 
 @router.delete("/{node_id}", response_model=ResponseModel)

@@ -13,6 +13,7 @@ from backend.auth.auth import get_current_user
 from backend.node.task import (
     delete_user_on_all_nodes,
     change_user_status_on_all_nodes,
+    create_user_on_all_nodes,
 )
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -66,13 +67,15 @@ async def create_user(
             success=False, msg="User with this name already exists", data=None
         )
 
-    if user["type"] == "admin":
-        crud.create_user(db, request, user["username"])
-        return ResponseModel(success=True, msg="User created successfully", data=None)
+    owner = user["username"] if user["type"] == "admin" else "owner"
+    created_user = crud.create_user(db, request, owner)
+    nodes_created, node_message = await create_user_on_all_nodes(created_user.name, db)
+    if not nodes_created:
+        crud.delete_user(db, created_user.name)
+        return ResponseModel(success=False, msg=node_message, data=None)
 
-    crud.create_user(db, request, "owner")
     return ResponseModel(
-        success=True, msg="User created successfully", data=request.name
+        success=True, msg="User created successfully", data=created_user.name
     )
 
 

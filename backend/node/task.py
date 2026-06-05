@@ -8,7 +8,11 @@ from backend.db import crud
 from backend.db.models import Node
 
 
-async def add_node_handler(request: NodeCreate, db: Session) -> bool:
+def openvpn_client_name(user_name: str, node_name: str) -> str:
+    return f"{user_name}-{node_name}"
+
+
+async def add_node_handler(request: NodeCreate, db: Session) -> tuple[bool, str]:
     new_node = NodeRequests(
         request.address,
         request.port,
@@ -18,13 +22,20 @@ async def add_node_handler(request: NodeCreate, db: Session) -> bool:
         request.ovpn_port,
         request.set_new_setting,
     )
-    if new_node.check_node():
-        crud.create_node(db, request)
+    node_ok, error = new_node.check_node_with_error()
+    if not node_ok:
+        msg = f"Node health check failed: {error}"
+        logger.warning(f"Failed to add node {request.address}:{request.port}: {msg}")
+        return False, msg
+
+    try:
+        saved_node = crud.create_node(db, request)
         logger.info(f"Node added successfully: {request.address}:{request.port}")
-        return True
-    else:
-        logger.warning(f"Failed to add node: {request.address}:{request.port}")
-        return False
+        return True, f"Node added successfully with id {saved_node.id}"
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to save node {request.address}:{request.port}: {e}")
+        return False, f"Node health check passed, but database save failed: {e}"
 
 
 async def update_node_handler(node_id: int, request: NodeCreate, db: Session) -> bool:
@@ -69,7 +80,7 @@ async def list_nodes_handler(db: Session) -> list:
             "ovpn_port": node.ovpn_port,
             "protocol": node.protocol,
             "port": node.port,
-            "status": "active" if node.status else "inactive",
+            "status": node.status,
         }
         nodes_list.append(node_info)
     return nodes_list
@@ -95,21 +106,36 @@ async def get_node_status_handler(node_id: int, db: Session):
 async def create_user_on_all_nodes(name: str, db: Session):
     """Create a user on all nodes"""
     nodes = crud.get_all_nodes(db)
-    if nodes:
-        for node in nodes:
-            node_requests = NodeRequests(
-                address=node.address, port=node.port, api_key=node.key
-            )
-            node_status = node_requests.check_node()
-            if node_status:
-                node_requests.create_user(f"{name}-{node.name}")
+    if not nodes:
+        return False, "No nodes are configured"
+
+    errors = []
+    for node in nodes:
+        client_name = openvpn_client_name(name, node.name)
+        node_requests = NodeRequests(
+            address=node.address, port=node.port, api_key=node.key
+        )
+        node_status, status_error = node_requests.check_node_with_error()
+        if node_status:
+            created, create_error = node_requests.create_user_with_error(client_name)
+            if created:
                 logger.info(
-                    f"User '{name}-{node.name}' created on node {node.address}:{node.port}"
+                    f"User '{client_name}' created on node {node.address}:{node.port}"
                 )
-            else:
-                logger.warning(
-                    f"Failed to create user '{name}-{node.name}' on node {node.address}:{node.port}"
-                )
+                continue
+            errors.append(f"{node.name}: {create_error}")
+            logger.warning(
+                f"Failed to create user '{client_name}' on node {node.address}:{node.port}: {create_error}"
+            )
+        else:
+            errors.append(f"{node.name}: {status_error}")
+            logger.warning(
+                f"Failed to create user '{client_name}' on node {node.address}:{node.port}: {status_error}"
+            )
+
+    if errors:
+        return False, "Failed to create user on node(s): " + "; ".join(errors)
+    return True, "User created on all nodes"
 
 
 async def change_user_status_on_all_nodes(
@@ -125,13 +151,14 @@ async def change_user_status_on_all_nodes(
             )
             node_status = node_request.check_node()
             if node_status:
-                node_request.change_user_status(f"{name}-{node.name}", status)
+                client_name = openvpn_client_name(name, node.name)
+                node_request.change_user_status(client_name, status)
                 logger.info(
-                    f"User '{name}-{node.name}' changed status on node {node.address}:{node.port}"
+                    f"User '{client_name}' changed status on node {node.address}:{node.port}"
                 )
             else:
                 logger.warning(
-                    f"Failed to chang user status '{name}-{node.name}' on node {node.address}:{node.port}"
+                    f"Failed to chang user status '{openvpn_client_name(name, node.name)}' on node {node.address}:{node.port}"
                 )
 
 
@@ -143,12 +170,13 @@ async def download_ovpn_client_from_node(
     user = crud.get_user_by_uuid(db, uuid)
     if not node or not user:
         return None
+    client_name = openvpn_client_name(user.name, node.name)
     result = NodeRequests(
         address=node.address, port=node.port, api_key=node.key
-    ).download_ovpn_client(f"{user.name}-{node.name}")
+    ).download_ovpn_client(client_name)
     if result:
         logger.info(
-            f"OVPN client downloaded for user '{user.name}-{node.name}' on node {node.address}:{node.port}"
+            f"OVPN client downloaded for user '{client_name}' on node {node.address}:{node.port}"
         )
         return result
     return None
@@ -164,13 +192,14 @@ async def delete_user_on_all_nodes(name: str, db: Session) -> bool:
             )
             node_status = node_requests.check_node()
             if node_status:
-                node_requests.delete_user(f"{name}-{node.name}")
+                client_name = openvpn_client_name(name, node.name)
+                node_requests.delete_user(client_name)
                 logger.info(
-                    f"User '{name}-{node.name}' deleted on node {node.address}:{node.port}"
+                    f"User '{client_name}' deleted on node {node.address}:{node.port}"
                 )
             else:
                 logger.warning(
-                    f"Failed to delete user '{name}-{node.name}' on node {node.address}:{node.port}"
+                    f"Failed to delete user '{openvpn_client_name(name, node.name)}' on node {node.address}:{node.port}"
                 )
         return True
     return False

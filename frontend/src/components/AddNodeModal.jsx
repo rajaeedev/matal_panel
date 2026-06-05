@@ -51,7 +51,9 @@ const AddNodeModal = ({ onClose, onNodeCreated }) => {
       let errorMessage = 'An error occurred while creating the node.';
       if (errorData?.detail) {
         if (Array.isArray(errorData.detail)) {
-          errorMessage = errorData.detail.map(item => item.msg).join(', ');
+          errorMessage = errorData.detail
+            .map(item => `${item.loc?.slice(1).join('.') || 'field'}: ${item.msg}`)
+            .join(', ');
         } else if (typeof errorData.detail === 'string') {
           errorMessage = errorData.detail;
         } else {
@@ -74,7 +76,7 @@ const AddNodeModal = ({ onClose, onNodeCreated }) => {
         <form onSubmit={handleSubmit}>
           <div className="input-group">
             <label htmlFor="name">{t('nodeName')}</label>
-            <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} required />
+            <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} required maxLength="40" />
           </div>
 
           {/* */}
@@ -84,7 +86,7 @@ const AddNodeModal = ({ onClose, onNodeCreated }) => {
           </div>
           <div className="input-group">
             <label htmlFor="port">{t('nodePort')}</label>
-            <input type="number" id="port" name="port" value={formData.port} onChange={handleChange} required />
+            <input type="number" id="port" name="port" value={formData.port} onChange={handleChange} required min="1" max="65535" />
           </div>
           <div className="input-group">
             <label htmlFor="tunnel_address">
@@ -105,11 +107,11 @@ const AddNodeModal = ({ onClose, onNodeCreated }) => {
           </div>
           <div className="input-group">
             <label htmlFor="ovpn_port">{t('ovpnPort')}</label>
-            <input type="number" id="ovpn_port" name="ovpn_port" value={formData.ovpn_port} onChange={handleChange} required />
+            <input type="number" id="ovpn_port" name="ovpn_port" value={formData.ovpn_port} onChange={handleChange} required min="1" max="65535" />
           </div>
           <div className="input-group">
             <label htmlFor="key">{t('key')}</label>
-            <input type="text" id="key" name="key" value={formData.key} onChange={handleChange} required />
+            <input type="text" id="key" name="key" value={formData.key} onChange={handleChange} required minLength="10" maxLength="128" />
           </div>
           <div className="input-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
             <input type="checkbox" id="status" name="status" checked={formData.status} onChange={handleChange} />
