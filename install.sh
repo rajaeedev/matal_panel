@@ -5,7 +5,7 @@ set -e
 APP_NAME="ov-panel"
 INSTALL_DIR="/opt/$APP_NAME"
 REPO_URL="https://github.com/rajaeedev/matal_panel.git"
-REPO_BRANCH="fix-panel-node-user-flow"
+REPO_BRANCH="main"
 
 GREEN="\033[0;32m"
 YELLOW="\033[1;33m"
