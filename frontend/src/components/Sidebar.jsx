@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { FiGrid, FiUsers, FiServer } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import logoSrc from '../assets/Logo-Landscape-Dark.webp';
+import BrandMark from './BrandMark';
 
 const Sidebar = () => {
   const { t } = useTranslation();
@@ -11,11 +11,7 @@ const Sidebar = () => {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <img
-          src={logoSrc}
-          alt="Panel Logo"
-          className="sidebar-logo"
-        />
+        <BrandMark />
       </div>
       <nav>
         <ul>

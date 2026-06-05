@@ -22,7 +22,7 @@ const formatUptime = (seconds) => {
 const StatCard = ({ icon, label, value, subValue, className, color }) => {
   return (
     <div className={`stat-card ${className}`}>
-      <div className="icon-background" style={{ backgroundColor: color ? `${color}20` : 'var(--accent-color-transparent)' }}>
+      <div className="icon-background" style={{ color }}>
         {icon}
       </div>
       <div className="stat-card-content">

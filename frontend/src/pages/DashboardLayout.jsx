@@ -3,8 +3,8 @@ import Sidebar from '../components/Sidebar';
 import MobileNav from '../components/MobileNav'; 
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { FiLogOut, FiRefreshCw, FiGithub, FiSend, FiGlobe } from 'react-icons/fi';
-import logoSrc from '../assets/Logo-Landscape-Dark.webp'; 
+import { FiLogOut, FiRefreshCw, FiGlobe } from 'react-icons/fi';
+import BrandMark from '../components/BrandMark';
 
 const DashboardLayout = () => {
   const { logout } = useAuth();
@@ -25,24 +25,17 @@ const DashboardLayout = () => {
       <Sidebar />
       <div className="content-wrapper">
         <header className="main-header">
-          {/* Logo container, visible only on mobile */}
           <div className="header-logo-container">
-            <img src={logoSrc} alt="Panel Logo" className="header-logo" />
+            <BrandMark compact />
           </div>
           <div className="header-actions">
-            <a href="https://t.me/OVPanel" target="_blank" rel="noopener noreferrer" className="action-btn">
-              <FiSend size={18} />
-            </a>
-            <a href="https://github.com/primeZdev/ov-panel" target="_blank" rel="noopener noreferrer" className="action-btn">
-              <FiGithub size={18} />
-            </a>
             <button onClick={changeLanguage} className="action-btn">
               <FiGlobe size={18} />
             </button>
             <button onClick={handleRefresh} className="action-btn">
               <FiRefreshCw size={18} />
             </button>
-            <button onClick={logout} className="btn btn-danger" style={{width: 'auto', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px'}}>
+            <button onClick={logout} className="btn btn-danger logout-btn">
               <FiLogOut />
               <span className="logout-text">{t('logout')}</span>
             </button>

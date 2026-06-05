@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import logoSrc from '../assets/Logo-Landscape-Dark.webp'; 
+import BrandMark from '../components/BrandMark';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -26,7 +26,8 @@ const LoginPage = () => {
   return (
     <div id="login-container">
       <div className="login-box">
-        <img src={logoSrc} alt="Panel Logo" className="login-logo" />
+        <BrandMark />
+        <p className="login-kicker">Encrypted operations layer</p>
         <h2>{t('loginTitle')}</h2>
         <form onSubmit={handleSubmit}>
           <div className="input-group">
